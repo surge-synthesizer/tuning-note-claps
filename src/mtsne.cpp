@@ -1,4 +1,5 @@
 #include <clap/clap.h>
+#include <clap/events.h>
 #include <clap/helpers/plugin.hh>
 #include <clap/helpers/plugin.hxx>
 #include <clap/helpers/host-proxy.hh>
@@ -6,6 +7,7 @@
 
 #include <iostream>
 #include <array>
+#include <cmath>
 
 #define _DBGCOUT std::cout << __FILE__ << ":" << __LINE__ << " | "
 
@@ -41,10 +43,68 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         {
             strncpy(info->name, "MTS Note Output", CLAP_NAME_SIZE);
         }
+        return true;
     }
 
+    bool implementsParams() const noexcept override { return true; }
+    bool isValidParamId(clap_id paramId) const noexcept override
+    {
+        return paramId >= 1 && paramId <= 1;
+    }
+    uint32_t paramsCount() const noexcept override { return 1; }
+    bool paramsInfo(uint32_t paramIndex, clap_param_info *info) const noexcept override
+    {
+        // Fixme - using parameter groups here would be lovely but until then
+        info->id = paramIndex + 1;
+        strncpy(info->name, "ED2 Into N", CLAP_NAME_SIZE);
+        strncpy(info->module, "Scale", CLAP_NAME_SIZE);
+
+        info->min_value = 4;
+        info->max_value = 59;
+        info->default_value = 19;
+        info->flags = CLAP_PARAM_IS_AUTOMATABLE | CLAP_PARAM_IS_STEPPED;
+
+        return true;
+    }
+    bool paramsValue(clap_id paramId, double *value) noexcept override
+    {
+        switch (paramId)
+        {
+        case 1:
+            *value = edN;
+            break;
+        }
+        return true;
+    }
+
+    bool paramsValueToText(clap_id paramId, double value, char *display,
+                           uint32_t size) noexcept override
+    {
+        switch (paramId)
+        {
+        case 1:
+        {
+            std::string s = "ED2/" + std::to_string((int)value);
+            strncpy(display, s.c_str(), CLAP_NAME_SIZE);
+            break;
+        }
+        }
+        return true;
+    }
+
+    int edN{19};
     std::array<bool, 127> notesOn;
     std::array<float, 127> sclTuning;
+
+    template <typename T> void dup(const clap_event_header_t *evt, const clap_output_events *ov)
+    {
+        /*
+        auto oevt = T();
+        memcpy(&oevt, evt, evt->size);
+        ov->try_push(ov, reinterpret_cast<clap_event_header_t *>(&oevt));
+         */
+        ov->try_push(ov, evt);
+    }
 
     clap_process_status process(const clap_process *process) noexcept override
     {
@@ -56,12 +116,27 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             auto evt = ev->get(ev, i);
             switch (evt->type)
             {
-            case CLAP_EVENT_MIDI:
-            case CLAP_EVENT_MIDI2:
+            case CLAP_EVENT_PARAM_VALUE:
             {
-                ov->try_push(ov, evt);
+                auto pevt = reinterpret_cast<const clap_event_param_value *>(evt);
+
+                auto id = pevt->param_id;
+                auto nf = pevt->value;
+                if (id == 1)
+                {
+                    edN = (int)(std::round(nf));
+                }
             }
             break;
+            case CLAP_EVENT_MIDI:
+                dup<clap_event_midi>(evt, ov);
+                break;
+            case CLAP_EVENT_MIDI2:
+                dup<clap_event_midi2>(evt, ov);
+                break;
+            case CLAP_EVENT_NOTE_CHOKE:
+                dup<clap_event_note>(evt, ov);
+                break;
             case CLAP_EVENT_NOTE_ON:
             {
                 auto nevt = reinterpret_cast<const clap_event_note *>(evt);
@@ -80,13 +155,13 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
                 q.expression_id = CLAP_NOTE_EXPRESSION_TUNING;
 
                 auto dFrom60 = nevt->key - 60;
-                auto retune = dFrom60 * 12 / 18.0 - dFrom60;
+                auto retune = dFrom60 * 12.0 / edN - dFrom60;
 
                 sclTuning[nevt->key] = retune;
 
                 q.value = retune;
 
-                ov->try_push(ov, evt);
+                dup<clap_event_note>(evt, ov);
                 ov->try_push(ov, reinterpret_cast<const clap_event_header *>(&q));
             }
             break;
@@ -94,7 +169,7 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             {
                 auto nevt = reinterpret_cast<const clap_event_note *>(evt);
                 notesOn[nevt->key] = false;
-                ov->try_push(ov, evt);
+                dup<clap_event_note>(evt, ov);
             }
             break;
             case CLAP_EVENT_NOTE_EXPRESSION:
@@ -114,13 +189,14 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             break;
             }
         }
+
+        return CLAP_PROCESS_CONTINUE;
     }
 };
 
 const clap_plugin *mtsne_create_plugin(const struct clap_plugin_factory *, const clap_host *host,
                                        const char *plugin_id)
 {
-    _DBGCOUT << "Creating Plugin" << std::endl;
     auto *plug = new MTSNE(host);
     return plug->clapPlugin();
 }

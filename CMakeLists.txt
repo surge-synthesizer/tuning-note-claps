@@ -27,7 +27,7 @@ if(APPLE)
             MACOSX_BUNDLE_SHORT_VERSION_STRING "0.1"
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}.plist.in
             )
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_MAC_UI=1 HAS_GUI=1)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror)
 
     set(products_folder ${CMAKE_BINARY_DIR})
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
