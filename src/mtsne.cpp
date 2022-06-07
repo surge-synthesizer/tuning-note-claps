@@ -19,6 +19,8 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         for (auto &v : notesOn)
             v = false;
+        for (auto &f : sclTuning)
+            f = 0.f;
     }
 
   protected:
@@ -42,6 +44,7 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     }
 
     std::array<bool, 127> notesOn;
+    std::array<float, 127> sclTuning;
 
     clap_process_status process(const clap_process *process) noexcept override
     {
@@ -63,6 +66,7 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             {
                 auto nevt = reinterpret_cast<const clap_event_note *>(evt);
                 notesOn[nevt->key] = true;
+                sclTuning[nevt->key] = 0.f;
 
                 auto q = clap_event_note_expression();
                 q.header.size = sizeof(clap_event_note_expression);
@@ -78,6 +82,8 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
                 auto dFrom60 = nevt->key - 60;
                 auto retune = dFrom60 * 12 / 18.0 - dFrom60;
 
+                sclTuning[nevt->key] = retune;
+
                 q.value = retune;
 
                 ov->try_push(ov, evt);
@@ -89,6 +95,21 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
                 auto nevt = reinterpret_cast<const clap_event_note *>(evt);
                 notesOn[nevt->key] = false;
                 ov->try_push(ov, evt);
+            }
+            break;
+            case CLAP_EVENT_NOTE_EXPRESSION:
+            {
+                auto nevt = reinterpret_cast<const clap_event_note_expression *>(evt);
+
+                auto oevt = clap_event_note_expression();
+                memcpy(&oevt, evt, nevt->header.size);
+
+                if (nevt->expression_id == CLAP_NOTE_EXPRESSION_TUNING)
+                {
+                    oevt.value += sclTuning[nevt->key];
+                }
+
+                ov->try_push(ov, reinterpret_cast<const clap_event_header *>(&oevt));
             }
             break;
             }
