@@ -9,13 +9,16 @@ project(MTSToNoteExpression VERSION 0.9.0 LANGUAGES C CXX)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 17)
 
+add_library(mts STATIC libs/MTS-ESP/Client/libMTSClient.cpp)
+target_include_directories(mts PUBLIC libs/MTS-ESP/Client)
+
 add_subdirectory(libs/clap EXCLUDE_FROM_ALL)
 add_subdirectory(libs/clap-helpers EXCLUDE_FROM_ALL)
 
 add_library(${PROJECT_NAME} MODULE
         src/mtsne.cpp
         )
-target_link_libraries(${PROJECT_NAME} clap-core clap-helpers)
+target_link_libraries(${PROJECT_NAME} clap-core clap-helpers mts)
 
 if(APPLE)
     set_target_properties(${PROJECT_NAME} PROPERTIES

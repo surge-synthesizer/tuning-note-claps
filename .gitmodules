@@ -4,3 +4,6 @@
 [submodule "libs/clap-helpers"]
 	path = libs/clap-helpers
 	url = https://github.com/free-audio/clap-helpers
+[submodule "libs/MTS-ESP"]
+	path = libs/MTS-ESP
+	url = https://github.com/ODDSound/MTS-ESP.git
