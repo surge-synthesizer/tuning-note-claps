@@ -14,15 +14,17 @@ target_include_directories(mts PUBLIC libs/MTS-ESP/Client)
 
 add_subdirectory(libs/clap EXCLUDE_FROM_ALL)
 add_subdirectory(libs/clap-helpers EXCLUDE_FROM_ALL)
+add_subdirectory(libs/tuning-library EXCLUDE_FROM_ALL)
 
 configure_file(src/cmake_info.h.in
         ${CMAKE_BINARY_DIR}/generated/cmake_info.h)
 
 add_library(${PROJECT_NAME} MODULE
         src/mtsne.cpp
+        src/edmne.cpp
         src/clap_descriptors.cpp
         )
-target_link_libraries(${PROJECT_NAME} clap-core clap-helpers mts)
+target_link_libraries(${PROJECT_NAME} clap-core clap-helpers mts tuning-library)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_BINARY_DIR}/generated)
 
 if(APPLE)
@@ -35,7 +37,7 @@ if(APPLE)
             MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
             MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}.plist.in
             )
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wno-unused-private-field)
 
     set(products_folder ${CMAKE_BINARY_DIR})
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -44,6 +46,9 @@ if(APPLE)
             COMMAND ${CMAKE_COMMAND} -E copy_directory "${products_folder}/${PROJECT_NAME}.clap" "~/Library/Audio/Plug-Ins/CLAP/${PROJECT_NAME}.clap"
             )
 
+elseif(UNIX)
+    # target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wno-unused-private-field)
+    set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".clap" PREFIX "")
 else()
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".clap" PREFIX "")
 endif()
