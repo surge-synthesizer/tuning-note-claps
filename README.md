@@ -23,6 +23,11 @@ events. This allows you to do morphing tuning in a release segment. If
 you never morph your tuning, you can set it to zero and everything is fine.
 
 You can grab the clap from the release page here. Right now the mac binary
-isn't signed so you may need to deal with that. Documentation forthcoming.
-Or perhaps just signing instead. Place the clap in the system location and 
-reindex!
+isn't signed so you may need to deal with that. The common way is
+install the clap and then do in a terminal:
+
+```base
+sudo xattr -r -d com.apple.quarantine /path/to/tuning-note-claps.clap
+```
+
+We will sign it and improve this documentation shortly
