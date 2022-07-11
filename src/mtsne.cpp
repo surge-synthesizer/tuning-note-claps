@@ -16,10 +16,9 @@
 struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::Terminate,
                                             clap::helpers::CheckingLevel::Minimal>
 {
-    static clap_plugin_descriptor desc;
-    MTSNE(const clap_host *host)
+    MTSNE(const clap_plugin_descriptor_t *desc, const clap_host *host)
         : clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::Terminate,
-                                clap::helpers::CheckingLevel::Minimal>(&desc, host)
+                                clap::helpers::CheckingLevel::Minimal>(desc, host)
     {
         for (auto &c : notesOn)
             for (auto &n : c)
@@ -235,52 +234,8 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     }
 };
 
-const clap_plugin *mtsne_create_plugin(const struct clap_plugin_factory *, const clap_host *host,
-                                       const char *plugin_id)
+const clap_plugin *create_mtsne(const clap_plugin_descriptor_t *desc, const clap_host *host)
 {
-    auto *plug = new MTSNE(host);
+    auto *plug = new MTSNE(desc, host);
     return plug->clapPlugin();
-}
-
-const char *features[] = {CLAP_PLUGIN_FEATURE_NOTE_EFFECT, "microtonal", "MTS-ESP", nullptr};
-clap_plugin_descriptor MTSNE::desc = {CLAP_VERSION,
-                                      "org.surge-synth-team.MTSToNoteExpression",
-                                      "MTS To Note Expression",
-                                      "Surge Synth Team",
-                                      "https://surge-synth-team.org",
-                                      "",
-                                      "",
-                                      "0.1.0",
-                                      "Augment a note stream with Pitch Note Expressions to retune",
-                                      features};
-
-uint32_t mtsne_get_plugin_count(const struct clap_plugin_factory *) { return 1; }
-const clap_plugin_descriptor *mtsne_get_plugin_descriptor(const struct clap_plugin_factory *,
-                                                          uint32_t)
-{
-    return &MTSNE::desc;
-}
-
-const struct clap_plugin_factory mtsne_clap_plugin_factory = {
-    mtsne_get_plugin_count,
-    mtsne_get_plugin_descriptor,
-    mtsne_create_plugin,
-};
-
-bool mtsne_clap_init(const char *) { return true; }
-void mtsne_clap_deinit(void) {}
-const void *mtsne_clap_get_factory(const char *factory_id)
-{
-    if (strcmp(factory_id, CLAP_PLUGIN_FACTORY_ID) == 0)
-    {
-        return &mtsne_clap_plugin_factory;
-    }
-
-    return nullptr;
-}
-
-extern "C"
-{
-    const CLAP_EXPORT struct clap_plugin_entry clap_entry = {
-        CLAP_VERSION, mtsne_clap_init, mtsne_clap_deinit, mtsne_clap_get_factory};
 }

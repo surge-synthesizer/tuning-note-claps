@@ -17,6 +17,7 @@ add_subdirectory(libs/clap-helpers EXCLUDE_FROM_ALL)
 
 add_library(${PROJECT_NAME} MODULE
         src/mtsne.cpp
+        src/clap_descriptors.cpp
         )
 target_link_libraries(${PROJECT_NAME} clap-core clap-helpers mts)
 
