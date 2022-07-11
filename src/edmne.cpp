@@ -48,8 +48,11 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     double secondsPerSample{0.f};
     double postNoteRelease{2.0};
 
-    int span{2}, divisions{19}, scaleRoot{60}, scaleTuningCenter{69};
+    int span{2}, divisions{19}, scaleTuningCenter{69};
     double scaleTuningFrequency{440};
+
+    int priorSpan{-1}, priorDivisions{-1}, priorCenter{-1};
+    double priorFrequency{-1};
 
     Tunings::Tuning tuning;
 
@@ -59,6 +62,15 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         rebuildTuning();
         return true;
     }
+
+    enum ParamID
+    {
+        octave_span = 0,
+        octave_divisions,
+        center,
+        frequency,
+        release
+    };
 
     bool implementsNotePorts() const noexcept override { return true; }
     uint32_t notePortsCount(bool isInput) const noexcept override { return 1; }
@@ -86,23 +98,23 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         return paramId >= paramIdBase && paramId <= paramIdBase + paramsCount();
     }
-    uint32_t paramsCount() const noexcept override { return 6; }
+    uint32_t paramsCount() const noexcept override { return 5; }
     bool paramsInfo(uint32_t paramIndex, clap_param_info *info) const noexcept override
     {
         info->id = paramIndex + paramIdBase;
 
         switch(paramIndex)
         {
-        case 0:
+        case octave_span:
             strncpy(info->name, "Even Division Of", CLAP_NAME_SIZE);
             strncpy(info->module, "", CLAP_NAME_SIZE);
 
-            info->min_value = 0;
-            info->max_value = 4;
-            info->default_value = 0;
+            info->min_value = 2;
+            info->max_value = 6;
+            info->default_value = 2;
             info->flags = CLAP_PARAM_IS_AUTOMATABLE | CLAP_PARAM_IS_STEPPED;
             break;
-        case 1:
+        case octave_divisions:
             strncpy(info->name, "Into Steps", CLAP_NAME_SIZE);
             strncpy(info->module, "", CLAP_NAME_SIZE);
 
@@ -111,16 +123,7 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             info->default_value = 19;
             info->flags = CLAP_PARAM_IS_AUTOMATABLE | CLAP_PARAM_IS_STEPPED;
             break;
-        case 2:
-            strncpy(info->name, "Scale Root Key", CLAP_NAME_SIZE);
-            strncpy(info->module, "", CLAP_NAME_SIZE);
-
-            info->min_value = 0;
-            info->max_value = 127;
-            info->default_value = 60;
-            info->flags = CLAP_PARAM_IS_AUTOMATABLE | CLAP_PARAM_IS_STEPPED;
-            break;
-        case 3:
+        case center:
             strncpy(info->name, "Tuning Center Key", CLAP_NAME_SIZE);
             strncpy(info->module, "", CLAP_NAME_SIZE);
 
@@ -129,7 +132,7 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             info->default_value = 69;
             info->flags = CLAP_PARAM_IS_AUTOMATABLE | CLAP_PARAM_IS_STEPPED;
             break;
-        case 4:
+        case frequency:
             strncpy(info->name, "Tuning Center Frequency", CLAP_NAME_SIZE);
             strncpy(info->module, "", CLAP_NAME_SIZE);
 
@@ -138,7 +141,7 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             info->default_value = 440;
             info->flags = CLAP_PARAM_IS_AUTOMATABLE;
             break;
-        case 5:
+        case release:
             strncpy(info->name, "Post Note Release (s)", CLAP_NAME_SIZE);
             strncpy(info->module, "", CLAP_NAME_SIZE);
 
@@ -157,22 +160,19 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         switch (paramId)
         {
-        case paramIdBase + 0:
-            *value = span - 2;
+        case paramIdBase + octave_span:
+            *value = span;
             break;
-        case paramIdBase + 1:
+        case paramIdBase + octave_divisions:
             *value = divisions;
             break;
-        case paramIdBase + 2:
-            *value = scaleRoot;
-            break;
-        case paramIdBase + 3:
+        case paramIdBase + center:
             *value = scaleTuningCenter;
             break;
-        case paramIdBase + 4:
+        case paramIdBase + frequency:
             *value = scaleTuningFrequency;
             break;
-        case paramIdBase + 5:
+        case paramIdBase + release:
             *value = postNoteRelease;
             break;
         }
@@ -184,30 +184,46 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         switch (paramId)
         {
-        case paramIdBase + 0:
-        {
-            strncpy(display, std::to_string((int)value + 2).c_str(), CLAP_NAME_SIZE);
-            return true;
-        }
-        case paramIdBase + 1:
-        case paramIdBase + 2:
-        case paramIdBase + 3:
+        case paramIdBase + octave_divisions:
+        case paramIdBase + octave_span:
+        case paramIdBase + center:
         {
             strncpy(display, std::to_string((int)value).c_str(), CLAP_NAME_SIZE);
             return true;
         }
-        case paramIdBase + 4:
+        case paramIdBase + frequency:
         {
             std::ostringstream oss;
             oss << std::setprecision(8) << value << " Hz";
             strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
             return true;
         }
-        case paramIdBase + 5:
+        case paramIdBase + release:
         {
             std::ostringstream oss;
             oss << std::setprecision(4) << value << " s";
             strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
+            return true;
+        }
+        }
+        return false;
+    }
+
+    bool paramsTextToValue(clap_id paramId, const char *display, double *value) noexcept override
+    {
+        switch (paramId)
+        {
+        case paramIdBase + octave_divisions:
+        case paramIdBase + octave_span:
+        case paramIdBase + center:
+        {
+            *value = std::atoi(display);
+            return true;
+        }
+        case paramIdBase + frequency:
+        case paramIdBase + release:
+        {
+            *value = std::atof(display);
             return true;
         }
         }
@@ -222,12 +238,11 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     bool stateSave(const clap_ostream *stream) noexcept override
     {
         std::map<clap_id, double> vals;
-        vals[paramIdBase + 0] = span;
-        vals[paramIdBase + 1] = divisions;
-        vals[paramIdBase + 2] = scaleRoot;
-        vals[paramIdBase + 3] = scaleTuningCenter;
-        vals[paramIdBase + 4] = scaleTuningFrequency;
-        vals[paramIdBase + 5] = postNoteRelease;
+        vals[paramIdBase + octave_span] = span;
+        vals[paramIdBase + octave_divisions] = divisions;
+        vals[paramIdBase + center] = scaleTuningCenter;
+        vals[paramIdBase + frequency] = scaleTuningFrequency;
+        vals[paramIdBase + release] = postNoteRelease;
         return helpersStateSave(stream, vals);
     }
     bool stateLoad(const clap_istream *stream) noexcept override
@@ -237,12 +252,11 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         if (!res)
             return false;
 
-        span = vals[paramIdBase + 0];
-        divisions = vals[paramIdBase + 1];
-        scaleRoot = vals[paramIdBase + 2];
-        scaleTuningCenter = vals[paramIdBase + 3];
-        scaleTuningFrequency = vals[paramIdBase + 4];
-        postNoteRelease = vals[paramIdBase + 5];
+        span = vals[paramIdBase + octave_span];
+        divisions = vals[paramIdBase + octave_divisions];
+        scaleTuningCenter = vals[paramIdBase + center];
+        scaleTuningFrequency = vals[paramIdBase + frequency];
+        postNoteRelease = vals[paramIdBase + release];
 
         return true;
     }
@@ -260,8 +274,16 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
 
     void rebuildTuning()
     {
+        if (frequency == priorFrequency && span == priorSpan &&
+            divisions == priorDivisions && center == priorCenter)
+            return;
+
+        priorFrequency = scaleTuningFrequency;
+        priorSpan = span;
+        priorDivisions = divisions;
+        priorCenter = scaleTuningCenter;
         auto sc = Tunings::evenDivisionOfSpanByM(span, divisions);
-        auto km = Tunings::startScaleOnAndTuneNoteTo(scaleRoot, scaleTuningCenter, scaleTuningFrequency);
+        auto km = Tunings::tuneNoteTo(scaleTuningCenter, scaleTuningFrequency);
         tuning = Tunings::Tuning(sc, km);
         auto ed212 = Tunings::Tuning();
 
@@ -286,39 +308,33 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         auto nf = pevt->value;
         switch(id)
         {
-        case paramIdBase + 0:
+        case paramIdBase + octave_span:
         {
-            span = static_cast<int>(std::round(nf)) + 2;
+            span = std::clamp(static_cast<int>(std::round(nf)), 2, 6);
             rebuildTuning();
         }
         break;
-        case paramIdBase + 1:
+        case paramIdBase + octave_divisions:
         {
-            divisions = static_cast<int>(std::round(nf));
+            divisions = std::clamp(static_cast<int>(std::round(nf)), 3, 72);
             rebuildTuning();
         }
         break;
-        case paramIdBase + 2:
+        case paramIdBase + center:
         {
-            scaleRoot = static_cast<int>(std::round(nf));
+            scaleTuningCenter = std::clamp(static_cast<int>(std::round(nf)), 0, 127);
             rebuildTuning();
         }
         break;
-        case paramIdBase + 3:
+        case paramIdBase + frequency:
         {
-            scaleTuningCenter = static_cast<int>(std::round(nf));
+            scaleTuningFrequency = std::clamp(nf, 220.0, 880.0);
             rebuildTuning();
         }
         break;
-        case paramIdBase + 4:
+        case paramIdBase + release:
         {
-            scaleTuningFrequency = static_cast<int>(std::round(nf));
-            rebuildTuning();
-        }
-        break;
-        case paramIdBase + 5:
-        {
-            postNoteRelease = nf;
+            postNoteRelease = std::clamp(nf, 0., 100.);
             rebuildTuning();
         }
         break;
