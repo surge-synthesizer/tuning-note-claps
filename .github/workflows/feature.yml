@@ -21,6 +21,7 @@ jobs:
             name: mac
             dir_build: ./build
             file_name: tuning-note-claps.clap
+            zip_arguments: -r
           - os: windows-latest
             name: win
             dir_build: ./build/Release
@@ -46,7 +47,7 @@ jobs:
       - name: Compress binary
         run: |
           cd "${{ matrix.dir_build }}"
-          zip ${{ matrix.file_name }}-${{ matrix.name }}.zip ${{ matrix.file_name }}
+          zip ${{ matrix.zip_arguments }} ${{ matrix.file_name }}-${{ matrix.name }}.zip ${{ matrix.file_name }}
 
       - name: Upload binary
         uses: actions/upload-artifact@v3
