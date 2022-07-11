@@ -48,7 +48,6 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
                   uint32_t maxFrameCount) noexcept override
     {
         mtsClient = MTS_RegisterClient();
-        _DBGCOUT << "MTS Client is " << mtsClient << std::endl;
         return true;
     }
 
