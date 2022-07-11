@@ -1,6 +1,15 @@
-//
-// Created by Paul Walker on 7/11/22.
-//
+/*
+ * tuning-note-claps
+ * https://github.com/surge-synthesizer/tuning-note-claps
+ *
+ * Released under the MIT License, included in the file "LICENSE.md"
+ * Copyright 2022, Paul Walker and other contributors as listed in the github
+ * transaction log.
+ *
+ * tuning-note-claps provides a set of CLAP plugins which augment
+ * note expression streams with Note Expressions for microtonal features.
+ * It is free and open source software.
+ */
 
 #ifndef MTSTONOTEEXPRESSION_CLAP_CREATORS_H
 #define MTSTONOTEEXPRESSION_CLAP_CREATORS_H

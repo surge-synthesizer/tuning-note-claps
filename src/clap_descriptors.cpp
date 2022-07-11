@@ -1,13 +1,23 @@
-//
-// Created by Paul Walker on 7/11/22.
-//
-
+/*
+* tuning-note-claps
+* https://github.com/surge-synthesizer/tuning-note-claps
+*
+* Released under the MIT License, included in the file "LICENSE.md"
+* Copyright 2022, Paul Walker and other contributors as listed in the github
+* transaction log.
+*
+* tuning-note-claps provides a set of CLAP plugins which augment
+* note expression streams with Note Expressions for microtonal features.
+* It is free and open source software.
+*/
 #include <cstring>
 
 #include <clap/plugin-factory.h>
 #include <clap/entry.h>
 
 #include "clap_creators.h"
+
+#include "cmake_info.h"
 
 const char *MTSNE_features[] = {CLAP_PLUGIN_FEATURE_NOTE_EFFECT, "microtonal", "MTS-ESP", nullptr};
 clap_plugin_descriptor MTSNE_desc = {
@@ -18,7 +28,7 @@ clap_plugin_descriptor MTSNE_desc = {
     "https://surge-synth-team.org",
     "",
     "",
-    "0.1.0",
+    getProjectVersion(),
     "Augment a note stream with Pitch Note Expressions to retune using MTS-ESP",
     MTSNE_features};
 
