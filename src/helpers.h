@@ -106,4 +106,146 @@ inline bool helpersStateLoad(const clap_istream *stream, std::map<clap_id, doubl
 
     return true;
 }
+
+template<typename T>
+inline void processTuningCore(T *that, const clap_process *process)
+{
+    auto ev = process->in_events;
+    auto ov = process->out_events;
+    auto sz = ev->size(ev);
+
+    auto &sclTuning = that->sclTuning;
+    // Generate top-of-block tuning messages for all our notes that are on
+    for (int c = 0; c < 16; ++c)
+    {
+        for (int i = 0; i < 127; ++i)
+        {
+            if (that->tuningActive() && that->noteRemaining[c][i] != 0.f)
+            {
+                auto prior = sclTuning[c][i];
+                sclTuning[c][i] = that->retuningFor(i, c);
+                if (sclTuning[c][i] != prior)
+                {
+                    auto q = clap_event_note_expression();
+                    q.header.size = sizeof(clap_event_note_expression);
+                    q.header.type = (uint16_t)CLAP_EVENT_NOTE_EXPRESSION;
+                    q.header.time = 0;
+                    q.header.space_id = CLAP_CORE_EVENT_SPACE_ID;
+                    q.header.flags = 0;
+                    q.key = i;
+                    q.channel = c;
+                    q.port_index = 0;
+                    q.expression_id = CLAP_NOTE_EXPRESSION_TUNING;
+
+                    q.value = sclTuning[c][i];
+
+                    ov->try_push(ov, reinterpret_cast<const clap_event_header *>(&q));
+                }
+            }
+        }
+    }
+
+    for (uint32_t i = 0; i < sz; ++i)
+    {
+        auto evt = ev->get(ev, i);
+        switch (evt->type)
+        {
+        case CLAP_EVENT_PARAM_VALUE:
+        {
+            auto pevt = reinterpret_cast<const clap_event_param_value *>(evt);
+
+            that->handleParamValue(pevt);
+        }
+        break;
+        case CLAP_EVENT_MIDI:
+        case CLAP_EVENT_MIDI2:
+        case CLAP_EVENT_MIDI_SYSEX:
+        case CLAP_EVENT_NOTE_CHOKE:
+            ov->try_push(ov, evt);
+            break;
+        case CLAP_EVENT_NOTE_ON:
+        {
+            auto nevt = reinterpret_cast<const clap_event_note *>(evt);
+            that->noteRemaining[nevt->channel][nevt->key] = -1;
+
+            auto q = clap_event_note_expression();
+            q.header.size = sizeof(clap_event_note_expression);
+            q.header.type = (uint16_t)CLAP_EVENT_NOTE_EXPRESSION;
+            q.header.time = nevt->header.time;
+            q.header.space_id = CLAP_CORE_EVENT_SPACE_ID;
+            q.header.flags = 0;
+            q.key = nevt->key;
+            q.channel = nevt->channel;
+            q.port_index = nevt->port_index;
+            q.expression_id = CLAP_NOTE_EXPRESSION_TUNING;
+
+            if (that->tuningActive())
+            {
+                sclTuning[nevt->channel][nevt->key] = that->retuningFor(nevt->key, nevt->channel);
+            }
+            q.value = sclTuning[nevt->channel][nevt->key];
+
+            ov->try_push(ov, evt);
+            ov->try_push(ov, reinterpret_cast<const clap_event_header *>(&q));
+        }
+        break;
+        case CLAP_EVENT_NOTE_OFF:
+        {
+            auto nevt = reinterpret_cast<const clap_event_note *>(evt);
+            that->noteRemaining[nevt->channel][nevt->key] = that->postNoteRelease;
+            ov->try_push(ov, evt);
+        }
+        break;
+        case CLAP_EVENT_NOTE_EXPRESSION:
+        {
+            auto nevt = reinterpret_cast<const clap_event_note_expression *>(evt);
+
+            auto oevt = clap_event_note_expression();
+            memcpy(&oevt, evt, nevt->header.size);
+
+            if (nevt->expression_id == CLAP_NOTE_EXPRESSION_TUNING)
+            {
+                if (that->tuningActive())
+                {
+                    sclTuning[nevt->channel][nevt->key] = that->retuningFor(nevt->key, nevt->channel);
+                }
+                oevt.value += sclTuning[nevt->channel][nevt->key];
+            }
+
+            ov->try_push(ov, reinterpret_cast<const clap_event_header *>(&oevt));
+        }
+        break;
+        }
+    }
+
+    // subtract block size seconds from everyone with remaining time and zero out some
+    for (auto &c : that->noteRemaining)
+        for (auto &n : c)
+            if (n > 0.f)
+            {
+                n -= that->secondsPerSample * process->frames_count;
+                if (n < 0)
+                    n = 0.f;
+            }
+}
+
+template<typename T>
+void paramsFlushTuningCore(T *that, const clap_input_events *in, const clap_output_events *out) noexcept
+{
+    auto ev = in;
+    auto sz = in->size(in);
+    for (uint32_t i = 0; i < sz; ++i)
+    {
+        auto evt = ev->get(ev, i);
+        switch (evt->type)
+        {
+        case CLAP_EVENT_PARAM_VALUE:
+        {
+            auto pevt = reinterpret_cast<const clap_event_param_value *>(evt);
+
+            that->handleParamValue(pevt);
+        }
+        }
+    }
+}
 #endif // TUNING_NOTE_CLAPS_HELPERS_H

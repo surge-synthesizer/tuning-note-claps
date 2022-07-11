@@ -23,7 +23,7 @@ const char *MTSNE_features[] = {CLAP_PLUGIN_FEATURE_NOTE_EFFECT, "microtonal", "
 clap_plugin_descriptor MTSNE_desc = {
     CLAP_VERSION,
     "org.surge-synth-team.MTSToNoteExpression",
-    "MTS To Note Expression",
+    "MTS-ESP To Note Expression",
     "Surge Synth Team",
     "https://surge-synth-team.org",
     "",
@@ -32,7 +32,20 @@ clap_plugin_descriptor MTSNE_desc = {
     "Augment a note stream with Pitch Note Expressions to retune using MTS-ESP",
     MTSNE_features};
 
-uint32_t mtsne_get_plugin_count(const struct clap_plugin_factory *) { return 1; }
+const char *EDNM_features[] = {CLAP_PLUGIN_FEATURE_NOTE_EFFECT, "microtonal", nullptr};
+clap_plugin_descriptor EDNM_desc = {
+    CLAP_VERSION,
+    "org.surge-synth-team.EDNMToNoteExpression",
+    "EDN-M To Note Expression",
+    "Surge Synth Team",
+    "https://surge-synth-team.org",
+    "",
+    "",
+    getProjectVersion(),
+    "Augment a note stream with Pitch Note Expressions to retune using a single EDN-M scale",
+    MTSNE_features};
+
+uint32_t mtsne_get_plugin_count(const struct clap_plugin_factory *) { return 2; }
 const clap_plugin_descriptor *mtsne_get_plugin_descriptor(const struct clap_plugin_factory *,
                                                           uint32_t idx)
 {
@@ -41,6 +54,8 @@ const clap_plugin_descriptor *mtsne_get_plugin_descriptor(const struct clap_plug
     {
     case 0:
         return &MTSNE_desc;
+    case 1:
+        return &EDNM_desc;
     }
     return nullptr;
 }
@@ -50,6 +65,9 @@ const clap_plugin *mtsne_create_plugin(const struct clap_plugin_factory *, const
 {
     if (strcmp(plugin_id, MTSNE_desc.id) == 0)
         return create_mtsne(&MTSNE_desc, host);
+
+    if (strcmp(plugin_id, EDNM_desc.id) == 0)
+        return create_ednmne(&EDNM_desc, host);
 
     return nullptr;
 }
