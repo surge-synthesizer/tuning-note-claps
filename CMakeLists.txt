@@ -47,7 +47,7 @@ if(APPLE)
             )
 
 elseif(UNIX)
-    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wno-unused-private-field)
+    # target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror -Wno-unused-private-field)
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".clap" PREFIX "")
 else()
     set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".clap" PREFIX "")
