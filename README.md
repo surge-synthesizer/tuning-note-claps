@@ -1,5 +1,7 @@
 # tuning-note-claps
 
+Get releases [here](https://github.com/surge-synthesizer/tuning-note-claps/releases).
+
 Beta (0.9.0) release
 
 The "tuning-note-claps" CLAP plugins are a set of note effects which
