@@ -170,6 +170,24 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         return false;
     }
 
+    bool paramsTextToValue(clap_id paramId, const char *display, double *value) noexcept override
+    {
+        switch (paramId)
+        {
+        case paramIdBase + 0:
+        {
+            *value = 0;
+            return true;
+        }
+        case paramIdBase + 1:
+        {
+            *value = std::atof(display);
+            return true;
+        }
+        }
+        return false;
+    }
+
     char priorScaleName[CLAP_NAME_SIZE];
     std::array<std::array<float, 127>, 16> noteRemaining; // -1 means still held, otherwise its the time
     std::array<std::array<double, 127>, 16> sclTuning;
