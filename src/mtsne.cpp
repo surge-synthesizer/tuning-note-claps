@@ -189,8 +189,8 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     }
 
     char priorScaleName[CLAP_NAME_SIZE];
-    std::array<std::array<float, 127>, 16> noteRemaining; // -1 means still held, otherwise its the time
-    std::array<std::array<double, 127>, 16> sclTuning;
+    std::array<std::array<float, 128>, 16> noteRemaining; // -1 means still held, otherwise its the time
+    std::array<std::array<double, 128>, 16> sclTuning;
 
     void onMainThread() noexcept override {
         // Scale name has changed. We need to send events
