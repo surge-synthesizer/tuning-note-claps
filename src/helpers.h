@@ -119,7 +119,7 @@ inline void processTuningCore(T *that, const clap_process *process)
     // Generate top-of-block tuning messages for all our notes that are on
     for (int c = 0; c < 16; ++c)
     {
-        for (int i = 0; i < 127; ++i)
+        for (int i = 0; i < 128; ++i)
         {
             if (that->tuningActive() && that->noteRemaining[c][i] != 0.f)
             {
@@ -224,7 +224,7 @@ inline void processTuningCore(T *that, const clap_process *process)
                 oevt.value += sclTuning[nevt->channel][nevt->key];
             }
 
-            // ov->try_push(ov, &oevt.header);
+            ov->try_push(ov, &oevt.header);
          }
         break;
         }
