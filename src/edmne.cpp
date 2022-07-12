@@ -231,8 +231,8 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     }
 
     char priorScaleName[CLAP_NAME_SIZE];
-    std::array<std::array<float, 127>, 16> noteRemaining; // -1 means still held, otherwise its the time
-    std::array<std::array<double, 127>, 16> sclTuning;
+    std::array<std::array<float, 128>, 16> noteRemaining; // -1 means still held, otherwise its the time
+    std::array<std::array<double, 128>, 16> sclTuning;
 
     bool implementsState() const noexcept override { return true; }
     bool stateSave(const clap_ostream *stream) noexcept override

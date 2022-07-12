@@ -114,6 +114,7 @@ inline void processTuningCore(T *that, const clap_process *process)
     auto ov = process->out_events;
     auto sz = ev->size(ev);
 
+
     auto &sclTuning = that->sclTuning;
     // Generate top-of-block tuning messages for all our notes that are on
     for (int c = 0; c < 16; ++c)
@@ -166,7 +167,13 @@ inline void processTuningCore(T *that, const clap_process *process)
         case CLAP_EVENT_NOTE_ON:
         {
             auto nevt = reinterpret_cast<const clap_event_note *>(evt);
+            assert(nevt->channel >= 0);
+            assert(nevt->channel < 16);
+            assert(nevt->key >= 0);
+            assert(nevt->key < 128 );
             that->noteRemaining[nevt->channel][nevt->key] = -1;
+
+            ov->try_push(ov, evt);
 
             auto q = clap_event_note_expression();
             q.header.size = sizeof(clap_event_note_expression);
@@ -177,6 +184,7 @@ inline void processTuningCore(T *that, const clap_process *process)
             q.key = nevt->key;
             q.channel = nevt->channel;
             q.port_index = nevt->port_index;
+            q.note_id = nevt->note_id;
             q.expression_id = CLAP_NOTE_EXPRESSION_TUNING;
 
             if (that->tuningActive())
@@ -185,13 +193,17 @@ inline void processTuningCore(T *that, const clap_process *process)
             }
             q.value = sclTuning[nevt->channel][nevt->key];
 
-            ov->try_push(ov, evt);
-            ov->try_push(ov, reinterpret_cast<const clap_event_header *>(&q));
+            // If you comment this line out, bitwig won't crash
+            ov->try_push(ov, &(q.header));
         }
         break;
         case CLAP_EVENT_NOTE_OFF:
         {
             auto nevt = reinterpret_cast<const clap_event_note *>(evt);
+            assert(nevt->channel >= 0);
+            assert(nevt->channel < 16);
+            assert(nevt->key >= 0);
+            assert(nevt->key < 128 );
             that->noteRemaining[nevt->channel][nevt->key] = that->postNoteRelease;
             ov->try_push(ov, evt);
         }
@@ -212,8 +224,8 @@ inline void processTuningCore(T *that, const clap_process *process)
                 oevt.value += sclTuning[nevt->channel][nevt->key];
             }
 
-            ov->try_push(ov, reinterpret_cast<const clap_event_header *>(&oevt));
-        }
+            // ov->try_push(ov, &oevt.header);
+         }
         break;
         }
     }
