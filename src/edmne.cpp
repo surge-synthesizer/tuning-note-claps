@@ -233,6 +233,7 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     char priorScaleName[CLAP_NAME_SIZE];
     std::array<std::array<float, 128>, 16> noteRemaining; // -1 means still held, otherwise its the time
     std::array<std::array<double, 128>, 16> sclTuning;
+    std::array<double, 128> internalTuning;
 
     bool implementsState() const noexcept override { return true; }
     bool stateSave(const clap_ostream *stream) noexcept override
@@ -263,7 +264,7 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
 
     bool tuningActive() { return true; }
     double retuningFor(int key, int channel) {
-        return sclTuning[0][key];
+        return internalTuning[key];
     }
 
     clap_process_status process(const clap_process *process) noexcept override
@@ -287,21 +288,13 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         tuning = Tunings::Tuning(sc, km);
         auto ed212 = Tunings::Tuning();
 
-        for (int k=0; k<127; ++k)
+        for (int k=0; k<128; ++k)
         {
             auto mt = tuning.logScaledFrequencyForMidiNote(k);
             auto et = ed212.logScaledFrequencyForMidiNote(k);
             auto diff = mt - et;
-            sclTuning[0][k] = diff * 12.0;
+            internalTuning[k] = diff * 12.0;
         }
-        for (int c=1;c<16;++c)
-        {
-            for (int k=0; k<127; ++k)
-            {
-                sclTuning[c][k] = sclTuning[0][k];
-            }
-        }
-
     }
     void handleParamValue(const clap_event_param_value *pevt) {
         auto id = pevt->param_id;
