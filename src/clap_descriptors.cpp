@@ -43,9 +43,22 @@ clap_plugin_descriptor EDNM_desc = {
     "",
     getProjectVersion(),
     "Augment a note stream with Pitch Note Expressions to retune using a single EDN-M scale",
-    MTSNE_features};
+    EDNM_features};
 
-uint32_t mtsne_get_plugin_count(const struct clap_plugin_factory *) { return 2; }
+const char *FOFF_features[] = {CLAP_PLUGIN_FEATURE_NOTE_EFFECT, nullptr};
+clap_plugin_descriptor FOFF_desc = {
+    CLAP_VERSION,
+    "org.surge-synth-team.FixedOffsetExpression",
+    "Fixed Offset Note Expression",
+    "Surge Synth Team",
+    "https://surge-synth-team.org",
+    "",
+    "",
+    getProjectVersion(),
+    "Augment a note stream with Pitch Note Expressions to retune using a single EDN-M scale",
+    FOFF_features};
+
+uint32_t mtsne_get_plugin_count(const struct clap_plugin_factory *) { return 3; }
 const clap_plugin_descriptor *mtsne_get_plugin_descriptor(const struct clap_plugin_factory *,
                                                           uint32_t idx)
 {
@@ -56,6 +69,8 @@ const clap_plugin_descriptor *mtsne_get_plugin_descriptor(const struct clap_plug
         return &MTSNE_desc;
     case 1:
         return &EDNM_desc;
+    case 2:
+        return &FOFF_desc;
     }
     return nullptr;
 }
@@ -68,6 +83,9 @@ const clap_plugin *mtsne_create_plugin(const struct clap_plugin_factory *, const
 
     if (strcmp(plugin_id, EDNM_desc.id) == 0)
         return create_ednmne(&EDNM_desc, host);
+
+    if (strcmp(plugin_id, FOFF_desc.id) == 0)
+        return create_foff(&FOFF_desc, host);
 
     return nullptr;
 }
