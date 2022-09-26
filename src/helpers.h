@@ -173,8 +173,6 @@ inline void processTuningCore(T *that, const clap_process *process)
             assert(nevt->key < 128 );
             that->noteRemaining[nevt->channel][nevt->key] = -1;
 
-            ov->try_push(ov, evt);
-
             auto q = clap_event_note_expression();
             q.header.size = sizeof(clap_event_note_expression);
             q.header.type = (uint16_t)CLAP_EVENT_NOTE_EXPRESSION;
@@ -194,6 +192,7 @@ inline void processTuningCore(T *that, const clap_process *process)
             q.value = sclTuning[nevt->channel][nevt->key];
 
             // If you comment this line out, bitwig won't crash
+            ov->try_push(ov, evt);
             ov->try_push(ov, &(q.header));
         }
         break;

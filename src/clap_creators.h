@@ -19,5 +19,6 @@
 
 extern const clap_plugin *create_mtsne(const clap_plugin_descriptor_t *desc, const clap_host *host);
 extern const clap_plugin *create_ednmne(const clap_plugin_descriptor_t *desc, const clap_host *host);
+extern const clap_plugin *create_foff(const clap_plugin_descriptor_t *desc, const clap_host *host);
 
 #endif // MTSTONOTEEXPRESSION_CLAP_CREATORS_H
