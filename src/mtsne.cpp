@@ -45,6 +45,15 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
                 f = 0.f;
     }
 
+    ~MTSNE()
+    {
+        if (mtsClient)
+        {
+            MTS_DeregisterClient(mtsClient);
+            mtsClient = nullptr;
+        }
+    }
+
     MTSClient *mtsClient{nullptr};
     double secondsPerSample{0.f};
 
@@ -65,7 +74,10 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     void deactivate() noexcept override
     {
         if (mtsClient)
+        {
             MTS_DeregisterClient(mtsClient);
+            mtsClient = nullptr;
+        }
     }
 
     bool implementsNotePorts() const noexcept override { return true; }
