@@ -22,7 +22,6 @@ configure_file(src/cmake_info.h.in
 add_library(${PROJECT_NAME} MODULE
         src/mtsne.cpp
         src/edmne.cpp
-        src/fixedoffset.cpp
         src/clap_descriptors.cpp
         )
 target_link_libraries(${PROJECT_NAME} clap-core clap-helpers mts tuning-library)

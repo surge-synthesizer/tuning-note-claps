@@ -1,15 +1,15 @@
 /*
-* tuning-note-claps
-* https://github.com/surge-synthesizer/tuning-note-claps
-*
-* Released under the MIT License, included in the file "LICENSE.md"
-* Copyright 2022, Paul Walker and other contributors as listed in the github
-* transaction log.
-*
-* tuning-note-claps provides a set of CLAP plugins which augment
-* note expression streams with Note Expressions for microtonal features.
-* It is free and open source software.
-*/
+ * tuning-note-claps
+ * https://github.com/surge-synthesizer/tuning-note-claps
+ *
+ * Released under the MIT License, included in the file "LICENSE.md"
+ * Copyright 2022, Paul Walker and other contributors as listed in the github
+ * transaction log.
+ *
+ * tuning-note-claps provides a set of CLAP plugins which augment
+ * note expression streams with Note Expressions for microtonal features.
+ * It is free and open source software.
+ */
 
 #include <clap/clap.h>
 #include <clap/events.h>
@@ -59,6 +59,7 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
 
     double postNoteRelease{2.0};
     int dummyMtsValue{0};
+    bool retuneHeld{true};
 
     bool activate(double sampleRate, uint32_t minFrameCount,
                   uint32_t maxFrameCount) noexcept override
@@ -106,12 +107,12 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         return paramId >= paramIdBase && paramId <= paramIdBase + paramsCount();
     }
-    uint32_t paramsCount() const noexcept override { return 2; }
+    uint32_t paramsCount() const noexcept override { return 3; }
     bool paramsInfo(uint32_t paramIndex, clap_param_info *info) const noexcept override
     {
         info->id = paramIndex + paramIdBase;
 
-        switch(paramIndex)
+        switch (paramIndex)
         {
         case 0:
             strncpy(info->name, "MTS Connection Status", CLAP_NAME_SIZE);
@@ -120,7 +121,8 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             info->min_value = 0;
             info->max_value = 0;
             info->default_value = 0;
-            info->flags = /* CLAP_PARAM_IS_READONLY | */ CLAP_PARAM_IS_AUTOMATABLE | CLAP_PARAM_IS_STEPPED;
+            info->flags =
+                /* CLAP_PARAM_IS_READONLY | */ CLAP_PARAM_IS_AUTOMATABLE | CLAP_PARAM_IS_STEPPED;
             break;
         case 1:
             strncpy(info->name, "Post Note Release (s)", CLAP_NAME_SIZE);
@@ -130,6 +132,14 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             info->max_value = 16;
             info->default_value = 2;
             info->flags = CLAP_PARAM_IS_AUTOMATABLE;
+            break;
+        case 2:
+            strncpy(info->name, "Retune Held Notes", CLAP_NAME_SIZE);
+            strncpy(info->module, "", CLAP_NAME_SIZE);
+            info->min_value = 0;
+            info->max_value = 1;
+            info->default_value = 1;
+            info->flags = CLAP_PARAM_IS_AUTOMATABLE | CLAP_PARAM_IS_STEPPED;
             break;
         default:
             return false;
@@ -147,11 +157,14 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         case paramIdBase + 1:
             *value = postNoteRelease;
             break;
+        case paramIdBase + 2:
+            *value = retuneHeld ? 1 : 0;
+            break;
         }
         return true;
     }
 
-    static constexpr const char* disconLabel = "No MTS Connection";
+    static constexpr const char *disconLabel = "No MTS Connection";
     bool paramsValueToText(clap_id paramId, double value, char *display,
                            uint32_t size) noexcept override
     {
@@ -178,6 +191,14 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
             return true;
         }
+        case paramIdBase + 2:
+        {
+            if (value)
+                strncpy(display, "Realtime Retune", CLAP_NAME_SIZE);
+            else
+                strncpy(display, "Snap at Note On", CLAP_NAME_SIZE);
+            return true;
+        }
         }
         return false;
     }
@@ -201,10 +222,12 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     }
 
     char priorScaleName[CLAP_NAME_SIZE];
-    std::array<std::array<float, 128>, 16> noteRemaining; // -1 means still held, otherwise its the time
+    std::array<std::array<float, 128>, 16>
+        noteRemaining; // -1 means still held, otherwise its the time
     std::array<std::array<double, 128>, 16> sclTuning;
 
-    void onMainThread() noexcept override {
+    void onMainThread() noexcept override
+    {
         // Scale name has changed. We need to send events
         if (_host.canUseParams())
             _host.paramsRescan(CLAP_PARAM_RESCAN_TEXT);
@@ -219,6 +242,7 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         std::map<clap_id, double> vals;
         vals[paramIdBase + 1] = postNoteRelease;
+        vals[paramIdBase + 2] = retuneHeld;
         return helpersStateSave(stream, vals);
     }
     bool stateLoad(const clap_istream *stream) noexcept override
@@ -229,18 +253,21 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             return false;
 
         postNoteRelease = vals[paramIdBase + 1];
+        retuneHeld = vals[paramIdBase + 1] != 0;
 
         return true;
     }
 
     clap_process_status process(const clap_process *process) noexcept override
     {
-        if (mtsClient && MTS_HasMaster(mtsClient) && strncmp(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE) != 0)
+        if (mtsClient && MTS_HasMaster(mtsClient) &&
+            strncmp(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE) != 0)
         {
             _host.requestCallback();
         }
 
-        if (mtsClient && !MTS_HasMaster(mtsClient) && strncmp(priorScaleName, disconLabel, CLAP_NAME_SIZE) != 0)
+        if (mtsClient && !MTS_HasMaster(mtsClient) &&
+            strncmp(priorScaleName, disconLabel, CLAP_NAME_SIZE) != 0)
         {
             _host.requestCallback();
         }
@@ -254,14 +281,16 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         auto id = pevt->param_id;
         auto nf = pevt->value;
-        if (id == paramIdBase + 0)
+        if (id == paramIdBase + 1)
         {
             postNoteRelease = nf;
         }
+        if (id == paramIdBase + 2)
+        {
+            retuneHeld = (nf != 0);
+        }
     }
-    bool tuningActive() const {
-        return mtsClient && MTS_HasMaster(mtsClient);
-    }
+    bool tuningActive() const { return mtsClient && MTS_HasMaster(mtsClient); }
 
     float retuningFor(int key, int channel) const
     {
@@ -272,6 +301,8 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         paramsFlushTuningCore(this, in, out);
     }
+
+    bool retuneHeldNotes() { return retuneHeld; }
 };
 
 const clap_plugin *create_mtsne(const clap_plugin_descriptor_t *desc, const clap_host *host)
