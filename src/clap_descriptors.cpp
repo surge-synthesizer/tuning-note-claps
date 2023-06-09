@@ -1,15 +1,15 @@
 /*
-* tuning-note-claps
-* https://github.com/surge-synthesizer/tuning-note-claps
-*
-* Released under the MIT License, included in the file "LICENSE.md"
-* Copyright 2022, Paul Walker and other contributors as listed in the github
-* transaction log.
-*
-* tuning-note-claps provides a set of CLAP plugins which augment
-* note expression streams with Note Expressions for microtonal features.
-* It is free and open source software.
-*/
+ * tuning-note-claps
+ * https://github.com/surge-synthesizer/tuning-note-claps
+ *
+ * Released under the MIT License, included in the file "LICENSE.md"
+ * Copyright 2022, Paul Walker and other contributors as listed in the github
+ * transaction log.
+ *
+ * tuning-note-claps provides a set of CLAP plugins which augment
+ * note expression streams with Note Expressions for microtonal features.
+ * It is free and open source software.
+ */
 #include <cstring>
 
 #include <clap/plugin-factory.h>
@@ -32,7 +32,8 @@ clap_plugin_descriptor MTSNE_desc = {
     "Augment a note stream with Pitch Note Expressions to retune using MTS-ESP",
     MTSNE_features};
 
-const char *EDNM_features[] = {CLAP_PLUGIN_FEATURE_NOTE_EFFECT, "microtonal", nullptr};
+const char *EDNM_features[] = {CLAP_PLUGIN_FEATURE_NOTE_EFFECT, "microtonal", "even-division",
+                               nullptr};
 clap_plugin_descriptor EDNM_desc = {
     CLAP_VERSION,
     "org.surge-synth-team.EDNMToNoteExpression",
@@ -45,20 +46,7 @@ clap_plugin_descriptor EDNM_desc = {
     "Augment a note stream with Pitch Note Expressions to retune using a single EDN-M scale",
     EDNM_features};
 
-const char *FOFF_features[] = {CLAP_PLUGIN_FEATURE_NOTE_EFFECT, nullptr};
-clap_plugin_descriptor FOFF_desc = {
-    CLAP_VERSION,
-    "org.surge-synth-team.FixedOffsetExpression",
-    "Fixed Offset Note Expression",
-    "Surge Synth Team",
-    "https://surge-synth-team.org",
-    "",
-    "",
-    getProjectVersion(),
-    "Augment a note stream with Pitch Note Expressions to retune using a single EDN-M scale",
-    FOFF_features};
-
-uint32_t mtsne_get_plugin_count(const struct clap_plugin_factory *) { return 3; }
+uint32_t mtsne_get_plugin_count(const struct clap_plugin_factory *) { return 2; }
 const clap_plugin_descriptor *mtsne_get_plugin_descriptor(const struct clap_plugin_factory *,
                                                           uint32_t idx)
 {
@@ -69,8 +57,6 @@ const clap_plugin_descriptor *mtsne_get_plugin_descriptor(const struct clap_plug
         return &MTSNE_desc;
     case 1:
         return &EDNM_desc;
-    case 2:
-        return &FOFF_desc;
     }
     return nullptr;
 }
@@ -83,9 +69,6 @@ const clap_plugin *mtsne_create_plugin(const struct clap_plugin_factory *, const
 
     if (strcmp(plugin_id, EDNM_desc.id) == 0)
         return create_ednmne(&EDNM_desc, host);
-
-    if (strcmp(plugin_id, FOFF_desc.id) == 0)
-        return create_foff(&FOFF_desc, host);
 
     return nullptr;
 }

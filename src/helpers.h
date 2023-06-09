@@ -1,14 +1,14 @@
 /*
-* tuning-note-claps
-* https://github.com/surge-synthesizer/tuning-note-claps
-*
-* Released under the MIT License, included in the file "LICENSE.md"
-* Copyright 2022, Paul Walker and other contributors as listed in the github
-* transaction log.
-*
-* tuning-note-claps provides a set of CLAP plugins which augment
-* note expression streams with Note Expressions for microtonal features.
-* It is free and open source software.
+ * tuning-note-claps
+ * https://github.com/surge-synthesizer/tuning-note-claps
+ *
+ * Released under the MIT License, included in the file "LICENSE.md"
+ * Copyright 2022, Paul Walker and other contributors as listed in the github
+ * transaction log.
+ *
+ * tuning-note-claps provides a set of CLAP plugins which augment
+ * note expression streams with Note Expressions for microtonal features.
+ * It is free and open source software.
  */
 
 #ifndef TUNING_NOTE_CLAPS_HELPERS_H
@@ -25,7 +25,8 @@
 #include <string>
 #include <vector>
 
-inline bool helpersStateSave(const clap_ostream *stream, const std::map<clap_id, double> &paramToValue) noexcept
+inline bool helpersStateSave(const clap_ostream *stream,
+                             const std::map<clap_id, double> &paramToValue) noexcept
 {
     std::ostringstream oss;
     auto cloc = std::locale("C");
@@ -50,7 +51,8 @@ inline bool helpersStateSave(const clap_ostream *stream, const std::map<clap_id,
     return true;
 }
 
-inline bool helpersStateLoad(const clap_istream *stream, std::map<clap_id, double> &paramToValue) noexcept
+inline bool helpersStateLoad(const clap_istream *stream,
+                             std::map<clap_id, double> &paramToValue) noexcept
 {
     static constexpr uint32_t maxSize = 4096 * 8, chunkSize = 256;
     char buffer[maxSize];
@@ -101,19 +103,17 @@ inline bool helpersStateLoad(const clap_istream *stream, std::map<clap_id, doubl
         istr.imbue(std::locale("C"));
         istr >> val;
 
-        paramToValue[(clap_id)id]= val;
+        paramToValue[(clap_id)id] = val;
     }
 
     return true;
 }
 
-template<typename T>
-inline void processTuningCore(T *that, const clap_process *process)
+template <typename T> inline void processTuningCore(T *that, const clap_process *process)
 {
     auto ev = process->in_events;
     auto ov = process->out_events;
     auto sz = ev->size(ev);
-
 
     auto &sclTuning = that->sclTuning;
     // Generate top-of-block tuning messages for all our notes that are on
@@ -121,7 +121,7 @@ inline void processTuningCore(T *that, const clap_process *process)
     {
         for (int i = 0; i < 128; ++i)
         {
-            if (that->tuningActive() && that->noteRemaining[c][i] != 0.f)
+            if (that->tuningActive() && that->noteRemaining[c][i] != 0.f && that->retuneHeldNotes())
             {
                 auto prior = sclTuning[c][i];
                 sclTuning[c][i] = that->retuningFor(i, c);
@@ -170,7 +170,7 @@ inline void processTuningCore(T *that, const clap_process *process)
             assert(nevt->channel >= 0);
             assert(nevt->channel < 16);
             assert(nevt->key >= 0);
-            assert(nevt->key < 128 );
+            assert(nevt->key < 128);
             that->noteRemaining[nevt->channel][nevt->key] = -1;
 
             auto q = clap_event_note_expression();
@@ -191,7 +191,6 @@ inline void processTuningCore(T *that, const clap_process *process)
             }
             q.value = sclTuning[nevt->channel][nevt->key];
 
-            // If you comment this line out, bitwig won't crash
             ov->try_push(ov, evt);
             ov->try_push(ov, &(q.header));
         }
@@ -202,7 +201,7 @@ inline void processTuningCore(T *that, const clap_process *process)
             assert(nevt->channel >= 0);
             assert(nevt->channel < 16);
             assert(nevt->key >= 0);
-            assert(nevt->key < 128 );
+            assert(nevt->key < 128);
             that->noteRemaining[nevt->channel][nevt->key] = that->postNoteRelease;
             ov->try_push(ov, evt);
         }
@@ -218,13 +217,14 @@ inline void processTuningCore(T *that, const clap_process *process)
             {
                 if (that->tuningActive())
                 {
-                    sclTuning[nevt->channel][nevt->key] = that->retuningFor(nevt->key, nevt->channel);
+                    sclTuning[nevt->channel][nevt->key] =
+                        that->retuningFor(nevt->key, nevt->channel);
                 }
                 oevt.value += sclTuning[nevt->channel][nevt->key];
             }
 
             ov->try_push(ov, &oevt.header);
-         }
+        }
         break;
         }
     }
@@ -240,8 +240,9 @@ inline void processTuningCore(T *that, const clap_process *process)
             }
 }
 
-template<typename T>
-void paramsFlushTuningCore(T *that, const clap_input_events *in, const clap_output_events *out) noexcept
+template <typename T>
+void paramsFlushTuningCore(T *that, const clap_input_events *in,
+                           const clap_output_events *out) noexcept
 {
     auto ev = in;
     auto sz = in->size(in);

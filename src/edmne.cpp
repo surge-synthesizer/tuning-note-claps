@@ -1,14 +1,14 @@
 /*
-* tuning-note-claps
-* https://github.com/surge-synthesizer/tuning-note-claps
-*
-* Released under the MIT License, included in the file "LICENSE.md"
-* Copyright 2022, Paul Walker and other contributors as listed in the github
-* transaction log.
-*
-* tuning-note-claps provides a set of CLAP plugins which augment
-* note expression streams with Note Expressions for microtonal features.
-* It is free and open source software.
+ * tuning-note-claps
+ * https://github.com/surge-synthesizer/tuning-note-claps
+ *
+ * Released under the MIT License, included in the file "LICENSE.md"
+ * Copyright 2022, Paul Walker and other contributors as listed in the github
+ * transaction log.
+ *
+ * tuning-note-claps provides a set of CLAP plugins which augment
+ * note expression streams with Note Expressions for microtonal features.
+ * It is free and open source software.
  */
 
 #include "clap_creators.h"
@@ -103,7 +103,7 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         info->id = paramIndex + paramIdBase;
 
-        switch(paramIndex)
+        switch (paramIndex)
         {
         case octave_span:
             strncpy(info->name, "Even Division Of", CLAP_NAME_SIZE);
@@ -231,7 +231,8 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     }
 
     char priorScaleName[CLAP_NAME_SIZE];
-    std::array<std::array<float, 128>, 16> noteRemaining; // -1 means still held, otherwise its the time
+    std::array<std::array<float, 128>, 16>
+        noteRemaining; // -1 means still held, otherwise its the time
     std::array<std::array<double, 128>, 16> sclTuning;
     std::array<double, 128> internalTuning;
 
@@ -263,9 +264,7 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     }
 
     bool tuningActive() { return true; }
-    double retuningFor(int key, int channel) {
-        return internalTuning[key];
-    }
+    double retuningFor(int key, int channel) { return internalTuning[key]; }
 
     clap_process_status process(const clap_process *process) noexcept override
     {
@@ -275,8 +274,8 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
 
     void rebuildTuning()
     {
-        if (frequency == priorFrequency && span == priorSpan &&
-            divisions == priorDivisions && center == priorCenter)
+        if (frequency == priorFrequency && span == priorSpan && divisions == priorDivisions &&
+            center == priorCenter)
             return;
 
         priorFrequency = scaleTuningFrequency;
@@ -288,7 +287,7 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         tuning = Tunings::Tuning(sc, km);
         auto ed212 = Tunings::Tuning();
 
-        for (int k=0; k<128; ++k)
+        for (int k = 0; k < 128; ++k)
         {
             auto mt = tuning.logScaledFrequencyForMidiNote(k);
             auto et = ed212.logScaledFrequencyForMidiNote(k);
@@ -296,10 +295,11 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             internalTuning[k] = diff * 12.0;
         }
     }
-    void handleParamValue(const clap_event_param_value *pevt) {
+    void handleParamValue(const clap_event_param_value *pevt)
+    {
         auto id = pevt->param_id;
         auto nf = pevt->value;
-        switch(id)
+        switch (id)
         {
         case paramIdBase + octave_span:
         {
@@ -338,6 +338,8 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     {
         paramsFlushTuningCore(this, in, out);
     }
+
+    bool retuneHeldNotes() { return true; }
 };
 const clap_plugin *create_ednmne(const clap_plugin_descriptor_t *desc, const clap_host *host)
 {
