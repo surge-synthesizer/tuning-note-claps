@@ -104,3 +104,5 @@ libs/juce-*
 ignore/*
 __pycache__
 minst.sh
+installer-tmp/*
+*dmg
