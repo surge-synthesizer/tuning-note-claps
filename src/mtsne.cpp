@@ -64,10 +64,20 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     bool activate(double sampleRate, uint32_t minFrameCount,
                   uint32_t maxFrameCount) noexcept override
     {
+        std::cout << __FILE__ << ":" << __LINE__ << " Activating MTS/ESP " << std::endl;
         mtsClient = MTS_RegisterClient();
+        std::cout << __FILE__ << ":" << __LINE__ << " Register Client said " << (size_t)mtsClient << std::endl;
         priorScaleName[0] = 0;
         if (MTS_HasMaster(mtsClient))
+        {
+            std::cout << __FILE__ << ":" << __LINE__ << " Has MTS Master is true" << std::endl;
             strncpy(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE);
+
+        }
+        else
+        {
+            std::cout << __FILE__ << ":" << __LINE__ << " Has MTS Master is false" << std::endl;
+        }
         secondsPerSample = 1.0 / sampleRate;
         return true;
     }
@@ -180,7 +190,10 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             }
             else
             {
-                strncpy(display, disconLabel, CLAP_NAME_SIZE);
+                std::ostringstream oss;
+                oss << "MTS: ptr=" << (size_t)mtsClient;
+
+                strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
             }
             return true;
         }
@@ -294,6 +307,7 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
 
     float retuningFor(int key, int channel) const
     {
+        std::cout << __FILE__ << ":" << __LINE__ << " Retuning For " << (size_t)mtsClient << " " << key << " " << channel << std::endl;
         return MTS_RetuningInSemitones(mtsClient, key, channel);
     }
 
