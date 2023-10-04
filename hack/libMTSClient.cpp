@@ -85,7 +85,7 @@ struct mtsclientglobal
 
                 CoTaskMemFree(cf);
                 buffer[MAX_PATH - 1] = L'\0';
-                WCOUD << L"PFC = " << buffer << std::endl;
+                WCOUT << L"PFC = " << buffer << std::endl;
                 const WCHAR *libpath = L"\\MTS-ESP\\LIBMTS.dll";
                 DWORD cfLen = wcslen(buffer);
                 wcsncat(buffer, libpath, MAX_PATH - cfLen - 1);
