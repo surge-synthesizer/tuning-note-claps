@@ -48,7 +48,11 @@ struct mtsclientglobal
         for (int i=0;i<16;i++) multi_channel_esp_retuning[i]=GetMultiChannelTuning?GetMultiChannelTuning(static_cast<char>(i)):0;
     }
     virtual inline bool isOnline() const {
-        COUT << "IS ONline " << esp_retuning << " " << (size_t)HasMaster << " " << (HasMaster && HasMaster()) << std::endl;
+        static bool olc{false};
+        if (!olc)
+            COUT << "IS ONline " << esp_retuning << " " << (size_t)HasMaster << " " << (HasMaster && HasMaster()) << std::endl;
+        olc = true;
+
         return esp_retuning && HasMaster && HasMaster();
     }
     
@@ -85,11 +89,9 @@ struct mtsclientglobal
 
                 CoTaskMemFree(cf);
                 buffer[MAX_PATH - 1] = L'\0';
-                WCOUT << L"PFC = " << buffer << std::endl;
                 const WCHAR *libpath = L"\\MTS-ESP\\LIBMTS.dll";
                 DWORD cfLen = wcslen(buffer);
                 wcsncat(buffer, libpath, MAX_PATH - cfLen - 1);
-                WCOUT << L"PFC with DLL = " << buffer << std::endl;
                 handle = LoadLibraryW(buffer);
                 COUT << "Handle is " << (size_t)handle << std::endl;
                 if (!handle)
