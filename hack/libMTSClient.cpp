@@ -66,7 +66,12 @@ struct mtsclientglobal
         SHGetKnownFolderPathFunc SHGetKnownFolderPath = 0;
         CoTaskMemFreeFunc CoTaskMemFree = 0;
         HMODULE shell32Module = GetModuleHandleW(L"Shell32.dll");
+        if (!shell32Module)
+            COUT << " No Shell32 " << GetLasterror() << std::endl;
         HMODULE ole32Module = GetModuleHandleW(L"Ole32.dll");
+        if (!ole32Module)
+            COUT << " No Ole32 " << GetLasterror() << std::endl;
+        COUT << " Modules sh32=" << (size_t)shell32Module << " ole=" << (size_t)ole32Module << std::endl;
         if (shell32Module)
             SHGetKnownFolderPath =
                 (SHGetKnownFolderPathFunc)GetProcAddress(shell32Module, "SHGetKnownFolderPath");
