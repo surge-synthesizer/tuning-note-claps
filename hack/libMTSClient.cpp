@@ -67,10 +67,10 @@ struct mtsclientglobal
         CoTaskMemFreeFunc CoTaskMemFree = 0;
         HMODULE shell32Module = GetModuleHandleW(L"Shell32.dll");
         if (!shell32Module)
-            COUT << " No Shell32 " << GetLasterror() << std::endl;
+            COUT << " No Shell32 " << GetLastError() << std::endl;
         HMODULE ole32Module = GetModuleHandleW(L"Ole32.dll");
         if (!ole32Module)
-            COUT << " No Ole32 " << GetLasterror() << std::endl;
+            COUT << " No Ole32 " << GetLastError() << std::endl;
         COUT << " Modules sh32=" << (size_t)shell32Module << " ole=" << (size_t)ole32Module << std::endl;
         if (shell32Module)
             SHGetKnownFolderPath =
