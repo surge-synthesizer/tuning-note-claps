@@ -11,6 +11,8 @@
  * It is free and open source software.
  */
 
+#include <algorithm>
+
 #include <clap/clap.h>
 #include <clap/events.h>
 #include <clap/helpers/plugin.hh>

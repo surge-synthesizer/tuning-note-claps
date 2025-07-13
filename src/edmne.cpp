@@ -11,6 +11,8 @@
  * It is free and open source software.
  */
 
+#include <algorithm>
+
 #include "clap_creators.h"
 
 #include <clap/clap.h>
@@ -28,6 +30,7 @@
 #include "Tunings.h"
 
 #include "helpers.h"
+
 
 struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::Terminate,
                                             clap::helpers::CheckingLevel::Minimal>
