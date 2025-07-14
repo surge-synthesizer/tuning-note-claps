@@ -2,8 +2,10 @@ name: Release
 
 on:
   push:
+    branches:
+      - main
     tags:
-      - "v*"
+      - 'v**'
 
 jobs:
   create_release:
@@ -38,8 +40,6 @@ jobs:
           - os: macos-latest
             name: mac
             dir_build: ./build
-            file_name: tuning-note-claps.clap
-            zip_arguments: -r
           - os: windows-latest
             name: win
             dir_build: ./build/Release
@@ -63,27 +63,44 @@ jobs:
         run: ls "${{ matrix.dir_build }}"
 
       - name: Compress binary
+        if: runner.os != 'macOS'
         run: |
           cd "${{ matrix.dir_build }}"
-          zip ${{ matrix.zip_arguments }} ${{ matrix.file_name }}-${{ matrix.name }}.zip ${{ matrix.file_name }}${{ matrix.file_ext }}
+          mkdir inst
+          zip ${{ matrix.zip_arguments }} inst/${{ matrix.file_name }}-${{ matrix.name }}.zip ${{ matrix.file_name }}${{ matrix.file_ext }}
 
-      - name: Upload binary
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make Mac DMG
+        if: runner.os == 'macOS'
+        run: |
+          export MAC_SIGNING_CERT="${{ secrets.MAC_SIGNING_CERT_NAME }}"
+          export MAC_INSTALLING_CERT="${{ secrets.MAC_INSTALLING_CERT_NAME }}"
+          
+          export MAC_SIGNING_ID="${{ secrets.MAC_SIGNING_ID }}"
+          export MAC_SIGNING_1UPW="${{ secrets.MAC_SIGNING_1UPW }}"
+          export MAC_SIGNING_TEAM="${{ secrets.MAC_SIGNING_TEAM }}"
+  
+          ./scripts/make_installer_macos.sh tuning-note-claps build `pwd`/scripts/res . 1.1.0
+          mkdir -p build/inst
+          mv *.dmg build/inst
+          
+          ls -l build/inst
+
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: ${{ matrix.dir_build }}/${{ matrix.file_name }}-${{ matrix.name }}.zip
-          asset_name: ${{ matrix.file_name }}-${{ matrix.name }}.zip
-          asset_content_type: application/zip
+          path: build/inst
+          name: dawplugin-${{ matrix.name }}
 
-  publish_release:
-    name: Publish release
-    needs: [create_release, build_release]
-    runs-on: ubuntu-latest
-    steps:
-    - uses: eregon/publish-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        release_id: ${{ needs.create_release.outputs.upload_id }}
+
+
+  #publish_release:
+  #  name: Publish release
+  #  needs: [create_release, build_release]
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #  - uses: eregon/publish-release@v1
+  #    env:
+  #      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #    with:
+  #      release_id: ${{ needs.create_release.outputs.upload_id }}
