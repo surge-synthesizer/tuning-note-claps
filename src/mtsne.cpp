@@ -178,11 +178,11 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             {
                 std::ostringstream oss;
                 oss << "MTS: " << MTS_GetScaleName(mtsClient);
-                strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
+                strncpy(display, oss.str().c_str(), size-1);
             }
             else
             {
-                strncpy(display, disconLabel, CLAP_NAME_SIZE);
+                strncpy(display, disconLabel, size-1);
             }
             return true;
         }
@@ -190,15 +190,15 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         {
             std::ostringstream oss;
             oss << std::setprecision(2) << value << " s";
-            strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
+            strncpy(display, oss.str().c_str(), size-1);
             return true;
         }
         case paramIdBase + 2:
         {
             if (value)
-                strncpy(display, "Realtime Retune", CLAP_NAME_SIZE);
+                strncpy(display, "Realtime Retune", size-1);
             else
-                strncpy(display, "Snap at Note On", CLAP_NAME_SIZE);
+                strncpy(display, "Snap at Note On", size-1);
             return true;
         }
         }

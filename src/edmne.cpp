@@ -191,21 +191,21 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         case paramIdBase + octave_span:
         case paramIdBase + center:
         {
-            strncpy(display, std::to_string((int)value).c_str(), CLAP_NAME_SIZE);
+            strncpy(display, std::to_string((int)value).c_str(), size-1);
             return true;
         }
         case paramIdBase + frequency:
         {
             std::ostringstream oss;
             oss << std::setprecision(8) << value << " Hz";
-            strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
+            strncpy(display, oss.str().c_str(), size-1);
             return true;
         }
         case paramIdBase + release:
         {
             std::ostringstream oss;
             oss << std::setprecision(4) << value << " s";
-            strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
+            strncpy(display, oss.str().c_str(), size-1);
             return true;
         }
         }
