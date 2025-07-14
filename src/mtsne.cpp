@@ -170,6 +170,7 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     bool paramsValueToText(clap_id paramId, double value, char *display,
                            uint32_t size) noexcept override
     {
+        memset(display, 0, size * sizeof(char));
         switch (paramId)
         {
         case paramIdBase + 0:
