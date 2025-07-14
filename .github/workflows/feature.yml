@@ -50,7 +50,7 @@ jobs:
           zip ${{ matrix.zip_arguments }} ${{ matrix.file_name }}-${{ matrix.name }}.zip ${{ matrix.file_name }}
 
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.file_name }}-${{ matrix.name }}.zip
           path: ${{ matrix.dir_build }}/${{ matrix.file_name }}-${{ matrix.name }}.zip

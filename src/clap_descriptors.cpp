@@ -12,7 +12,7 @@
  */
 #include <cstring>
 
-#include <clap/plugin-factory.h>
+#include <clap/factory/plugin-factory.h>
 #include <clap/entry.h>
 
 #include "clap_creators.h"

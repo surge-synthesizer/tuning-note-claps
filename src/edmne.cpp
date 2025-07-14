@@ -11,6 +11,8 @@
  * It is free and open source software.
  */
 
+#include <algorithm>
+
 #include "clap_creators.h"
 
 #include <clap/clap.h>
@@ -28,6 +30,7 @@
 #include "Tunings.h"
 
 #include "helpers.h"
+
 
 struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::Terminate,
                                             clap::helpers::CheckingLevel::Minimal>
@@ -182,27 +185,29 @@ struct EDMNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     bool paramsValueToText(clap_id paramId, double value, char *display,
                            uint32_t size) noexcept override
     {
+        memset(display, 0, size * sizeof(char));
+
         switch (paramId)
         {
         case paramIdBase + octave_divisions:
         case paramIdBase + octave_span:
         case paramIdBase + center:
         {
-            strncpy(display, std::to_string((int)value).c_str(), CLAP_NAME_SIZE);
+            strncpy(display, std::to_string((int)value).c_str(), size-1);
             return true;
         }
         case paramIdBase + frequency:
         {
             std::ostringstream oss;
             oss << std::setprecision(8) << value << " Hz";
-            strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
+            strncpy(display, oss.str().c_str(), size-1);
             return true;
         }
         case paramIdBase + release:
         {
             std::ostringstream oss;
             oss << std::setprecision(4) << value << " s";
-            strncpy(display, oss.str().c_str(), CLAP_NAME_SIZE);
+            strncpy(display, oss.str().c_str(), size-1);
             return true;
         }
         }
