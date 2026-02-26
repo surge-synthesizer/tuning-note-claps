@@ -45,11 +45,6 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         for (auto &c : sclTuning)
             for (auto &f : c)
                 f = 0.f;
-
-        mtsClient = MTS_RegisterClient();
-        priorScaleName[0] = 0;
-        if (MTS_HasMaster(mtsClient))
-            strncpy(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE);
     }
 
     ~MTSNE()
@@ -67,6 +62,7 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     double postNoteRelease{2.0};
     int dummyMtsValue{0};
     bool retuneHeld{true};
+    bool checkForMTSOnFirstProcess{true};
 
     bool activate(double sampleRate, uint32_t minFrameCount,
                   uint32_t maxFrameCount) noexcept override
@@ -272,6 +268,18 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
 
     clap_process_status process(const clap_process *process) noexcept override
     {
+        if (checkForMTSOnFirstProcess)
+        {
+            if (!mtsClient)
+            {
+                mtsClient = MTS_RegisterClient();
+                priorScaleName[0] = 0;
+                if (MTS_HasMaster(mtsClient))
+                    strncpy(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE);
+            }
+            checkForMTSOnFirstProcess = false;
+        }
+
         if (mtsClient && MTS_HasMaster(mtsClient) &&
             strncmp(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE) != 0)
         {
