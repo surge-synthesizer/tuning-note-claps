@@ -45,6 +45,11 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         for (auto &c : sclTuning)
             for (auto &f : c)
                 f = 0.f;
+
+        mtsClient = MTS_RegisterClient();
+        priorScaleName[0] = 0;
+        if (MTS_HasMaster(mtsClient))
+            strncpy(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE);
     }
 
     ~MTSNE()
@@ -66,10 +71,14 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     bool activate(double sampleRate, uint32_t minFrameCount,
                   uint32_t maxFrameCount) noexcept override
     {
-        mtsClient = MTS_RegisterClient();
-        priorScaleName[0] = 0;
-        if (MTS_HasMaster(mtsClient))
-            strncpy(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE);
+        if (!mtsClient)
+        {
+            mtsClient = MTS_RegisterClient();
+            priorScaleName[0] = 0;
+            if (MTS_HasMaster(mtsClient))
+                strncpy(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE);
+        }
+
         secondsPerSample = 1.0 / sampleRate;
         return true;
     }
@@ -179,11 +188,11 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
             {
                 std::ostringstream oss;
                 oss << "MTS: " << MTS_GetScaleName(mtsClient);
-                strncpy(display, oss.str().c_str(), size-1);
+                strncpy(display, oss.str().c_str(), size - 1);
             }
             else
             {
-                strncpy(display, disconLabel, size-1);
+                strncpy(display, disconLabel, size - 1);
             }
             return true;
         }
@@ -191,15 +200,15 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
         {
             std::ostringstream oss;
             oss << std::setprecision(2) << value << " s";
-            strncpy(display, oss.str().c_str(), size-1);
+            strncpy(display, oss.str().c_str(), size - 1);
             return true;
         }
         case paramIdBase + 2:
         {
             if (value)
-                strncpy(display, "Realtime Retune", size-1);
+                strncpy(display, "Realtime Retune", size - 1);
             else
-                strncpy(display, "Snap at Note On", size-1);
+                strncpy(display, "Snap at Note On", size - 1);
             return true;
         }
         }
