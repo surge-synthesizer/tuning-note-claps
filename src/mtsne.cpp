@@ -62,7 +62,7 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
     double postNoteRelease{2.0};
     int dummyMtsValue{0};
     bool retuneHeld{true};
-    bool checkForMTSOnFirstProcess{true};
+    int reCheckMTS{0};
 
     bool activate(double sampleRate, uint32_t minFrameCount,
                   uint32_t maxFrameCount) noexcept override
@@ -268,16 +268,14 @@ struct MTSNE : public clap::helpers::Plugin<clap::helpers::MisbehaviourHandler::
 
     clap_process_status process(const clap_process *process) noexcept override
     {
-        if (checkForMTSOnFirstProcess)
+        if (!mtsClient && ++reCheckMTS < 50)
         {
-            if (!mtsClient)
-            {
-                mtsClient = MTS_RegisterClient();
-                priorScaleName[0] = 0;
-                if (MTS_HasMaster(mtsClient))
-                    strncpy(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE);
-            }
-            checkForMTSOnFirstProcess = false;
+            mtsClient = MTS_RegisterClient();
+            priorScaleName[0] = 0;
+            if (MTS_HasMaster(mtsClient))
+                strncpy(priorScaleName, MTS_GetScaleName(mtsClient), CLAP_NAME_SIZE);
+
+            reCheckMTS = 0;
         }
 
         if (mtsClient && MTS_HasMaster(mtsClient) &&
